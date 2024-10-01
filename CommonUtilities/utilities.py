@@ -4,7 +4,6 @@ from sqlalchemy import create_engine
 import cx_Oracle
 import logging
 from CommonUtilities.config import *
-from CommonUtilities.utilities import *
 
 # Set up logging configuration
 logging.basicConfig(
@@ -15,26 +14,27 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
 #conn_mysql=create_engine('mysql+pymysql://root:Sur_nar26@localhost:3306/etlretailproject')
 conn_mysql = create_engine(f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}')
 
 #conn_oracle=create_engine("oracle+cx_oracle://system:admin@localhost:1521/xe")
 conn_oracle = create_engine(f'oracle+cx_oracle://{ORACLE_USER}:{ORACLE_PASSWORD}@{ORACLE_HOST}:{ORACLE_PORT}/{ORACLE_SERVICE}')
 
-def test_dataextract_from_salesdatafile():
-    file_to_db_validate("Input_Data/sales_data.csv","sales_staging",conn_mysql,"csv")
-    
-def test_dataextract_from_productdatafile():
-    file_to_db_validate("Input_Data/product_data.csv","product_staging",conn_mysql,"csv")
-    
-def test_dataextract_from_inventorydatafile():
-    file_to_db_validate("Input_Data/inventory_data.xml","inventory_staging",conn_mysql,"xml")
+def file_to_db_validate(file_path,table_name,db_engine,file_type):
+    if file_type=='csv':  
+        expected_df=pd.read_csv(file_path)
+    elif  file_type=='json':
+        expected_df=pd.read_json(file_path)
+    elif  file_type=='xml':
+        expected_df=pd.read_xml(file_path,xpath='.//item')     
+    else:
+        raise ValueError(f"Unsupported file type:{file_type} ") 
 
-def test_dataextract_from_supplierdatafile():
-    file_to_db_validate("Input_Data/supplier_data.json","supplier_staging",conn_mysql,"json")
+    query = f"Select * from {table_name};"
+    actual_df=pd.read_sql(query,db_engine)
+    assert actual_df.equals(expected_df),f"Data mismatch between the file and table. Please verify.."
 
-def test_dataextract_store_oracledata():
-    query1="""select * from store"""
-    query2="""select * from store_staging"""
-    db_to_db_validate(query1,conn_oracle,query2,conn_mysql)
+def db_to_db_validate(query1,db_engine1,query2,db_engine2):
+    actual_df=pd.read_sql(query1,db_engine1)
+    expected_df=pd.read_sql(query2,db_engine2)
+    assert actual_df.equals(expected_df),f"Data mismatch between db and table. Please verify.." 
