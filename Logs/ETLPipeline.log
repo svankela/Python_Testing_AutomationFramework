@@ -1,0 +1,2 @@
+ERROR    Test_Scripts.test_load:test_load.py:30 Error while processing the table fact_sales. Verify once..Data mismatch between db and table. Please verify..
+ERROR    Test_Scripts.test_load:test_load.py:66 Error while processing the table inventory_levels_by_store. Verify once..Data mismatch between db and table. Please verify..
